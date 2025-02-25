@@ -4,13 +4,7 @@ Vulcan - Hunter's Arsenal
 An advanced, modular, AI-driven bug bounty hunting tool with colorful animations and real-time feedback.
 
 Usage:
-    python main.py --all
-    python main.py --recon
-    python main.py --fuzz
-    python main.py --exploit
-    python main.py --generate
-    python main.py --report
-    python main.py --feedback
+    python3 main.py [-h] [-d DOMAIN] (--enumerate | --collect | --filter | --generate | --vuln xss,sqli,ssrf,csrf,xxe,idor, etc. | --report)
 """
 
 import argparse
@@ -25,7 +19,10 @@ import openai
 from rich.console import Console
 from rich.panel import Panel
 from rich.theme import Theme
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.live import Live
+from rich.table import Table
+from rich.markdown import Markdown
 
 # Import custom modules
 import subdomain_enumeration
@@ -66,9 +63,9 @@ def run_all():
         subdomain_enumeration.enumerate_subdomains,
         url_collection.collect_urls,
         vulnerability_filtering.categorize_urls,
-        ai_payload_generation.generate_payloads,
+        ai_payload_generation.run,
         vulnerability_testing.run_tests,
-        ai_fuzzing.fuzz_parameters,
+        ai_fuzzing.run,
         report_generation.generate_reports
     ]
     with Progress(
@@ -76,14 +73,15 @@ def run_all():
         TextColumn("[progress.description]{task.description}"),
         BarColumn(bar_width=None),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
     ) as progress:
-        task1 = progress.add_task("[cyan]Running subdomain enumeration...", total=100)
-        task2 = progress.add_task("[magenta]Running URL collection...", total=100)
-        task3 = progress.add_task("[yellow]Categorizing URLs...", total=100)
-        task4 = progress.add_task("[green]Generating payloads...", total=100)
-        task5 = progress.add_task("[blue]Running vulnerability tests...", total=100)
-        task6 = progress.add_task("[cyan]Fuzzing parameters...", total=100)
-        task7 = progress.add_task("[green]Generating reports...", total=100)
+        task1 = progress.add_task("[cyan]Running subdomain enumeration... 🌐", total=100)
+        task2 = progress.add_task("[magenta]Running URL collection... 📋", total=100)
+        task3 = progress.add_task("[yellow]Categorizing URLs... 📂", total=100)
+        task4 = progress.add_task("[green]Generating payloads... 🔧", total=100)
+        task5 = progress.add_task("[blue]Running vulnerability tests... 🛡️", total=100)
+        task6 = progress.add_task("[cyan]Fuzzing parameters... 🧪", total=100)
+        task7 = progress.add_task("[green]Generating reports... 📄", total=100)
         
         threads = []
         for task in tasks:
@@ -104,31 +102,34 @@ def run_all():
 
 def main():
     parser = argparse.ArgumentParser(description="Vulcan - Advanced Bug Bounty Tool")
-    parser.add_argument("--recon", "-r", action="store_true", help="Run all reconnaissance modules")
-    parser.add_argument("--fuzz", "-f", action="store_true", help="Run fuzzing modules")
-    parser.add_argument("--exploit", "-e", action="store_true", help="Run exploitation modules")
-    parser.add_argument("--generate", "-g", action="store_true", help="Generate AI-based payloads")
-    parser.add_argument("--report", "-rp", action="store_true", help="Generate reports")
-    parser.add_argument("--feedback", "-fb", action="store_true", help="Collect and store user feedback")
-    parser.add_argument("--all", "-a", action="store_true", help="Run the complete workflow: recon → fuzz → exploit → generate → report")
+    parser.add_argument("-d", "--domain", type=str, help="Specify the domain to target")
+    parser.add_argument("--enumerate", action="store_true", help="Run subdomain enumeration")
+    parser.add_argument("--collect", action="store_true", help="Run URL collection")
+    parser.add_argument("--filter", action="store_true", help="Run URL filtering")
+    parser.add_argument("--generate", action="store_true", help="Generate AI-based payloads")
+    parser.add_argument("--vuln", type=str, help="Run vulnerability tests for specified types (e.g., xss,sqli,ssrf,csrf,xxe,idor)")
+    parser.add_argument("--report", action="store_true", help="Generate reports")
+    parser.add_argument("--all", action="store_true", help="Run the complete workflow: recon → fuzz → exploit → generate → report")
     
     args = parser.parse_args()
 
     if args.all:
         run_all()
     else:
-        if args.recon:
-            subdomain_enumeration.enumerate_subdomains("example.com")
-        if args.fuzz:
-            ai_fuzzing.fuzz_parameters()
-        if args.exploit:
-            vulnerability_testing.run_tests()
+        if args.enumerate:
+            subdomain_enumeration.enumerate_subdomains(args.domain)
+        if args.collect:
+            url_collection.collect_urls()
+        if args.filter:
+            vulnerability_filtering.categorize_urls()
         if args.generate:
-            ai_payload_generation.generate_payloads("xss")
+            ai_payload_generation.run()
+        if args.vuln:
+            vulnerability_types = args.vuln.split(',')
+            for vuln_type in vulnerability_types:
+                vulnerability_testing.run_tests(vuln_type)
         if args.report:
             report_generation.generate_reports()
-        if args.feedback:
-            console.print("[info]Collecting feedback is not implemented yet.[/info]")
         if len(vars(args)) == 1:
             parser.print_help()
 
