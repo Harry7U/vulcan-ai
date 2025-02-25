@@ -176,11 +176,11 @@ chmod +x install.sh
 
 # Generate payloads for all vulnerability types
 echo -e "${GREEN}🔧 Generating payloads for all vulnerability types...${NC}"
-python3 ai_payload_generation.py
+python3 scripts/ai_payload_generation.py
 
 # Integrate with other scripts for vulnerability testing
 echo -e "${GREEN}🔗 Integrating with other scripts for vulnerability testing...${NC}"
-python3 ai_fuzzing.py
-python3 vulnerability_testing.py
+python3 scripts/ai_fuzzing.py
+python3 scripts/vulnerability_testing.py
 
-echo -e "${GREEN}✅ Installation complete. Configure your API keys and sensitive data in 'config/config.json'.${NC}"
+echo -e "${GREEN}✅ Installation complete. Configure your API keys and sensitive data in 'configs/config.json'.${NC}"
