@@ -1,12 +1,14 @@
 {
-  "openai_api_key": "YOUR_OPENAI_API_KEY",
-  "other_sensitive_data": {
-    "example": "value"
+  "api_keys": {
+    "openai_api_key": "YOUR_OPENAI_API_KEY"
+  },
+  "tools": {
+    "dalfox_path": "/usr/bin/dalfox",
+    "sqlmap_path": "/usr/bin/sqlmap",
+    "ffuf_path": "/usr/bin/ffuf"
   },
   "settings": {
-    "max_threads": 20,
-    "timeout": 60,
-    "color_theme": "vibrant",
-    "enable_animations": true
+    "threads": 10,
+    "timeout": 30
   }
 }
