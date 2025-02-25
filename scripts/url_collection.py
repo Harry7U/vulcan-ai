@@ -1,30 +1,35 @@
 import subprocess
-from pathlib import Path
-from rich.console import Console
-from rich.progress import Progress
+import concurrent.futures
 
-OUTPUT_DIR = Path("output")
+def run_tool(tool, args):
+    subprocess.run([tool] + args, shell=True)
 
-def collect_urls():
-    console = Console()
-    console.print("[title]🌐 Collecting URLs...[/title]")
-    urls = []
+def run(domain):
     tools = [
-        ("waybackurls", "cat output/subdomains.txt | waybackurls > waybackurls_output.txt"),
-        ("gau", "cat output/subdomains.txt | gau > gau_output.txt"),
-        ("katana", "katana -list output/subdomains.txt -o katana_output.txt")
+        ("waybackurls", ["<", "output/subdomains.txt", ">", "output/urls_waybackurls.txt"]),
+        ("gau", ["-o", "output/urls_gau.txt", "--threads", "5", "-b", domain]),
+        ("katana", ["-d", domain, "-o", "output/urls_katana.txt"]),
+        ("getJS", ["-url", "output/subdomains.txt", "-o", "output/urls_getjs.txt"]),
+        ("hakrawler", ["-url", "output/subdomains.txt", "-o", "output/urls_hakrawler.txt"]),
+        ("gospider", ["-d", domain, "-o", "output/urls_gospider.txt"]),
+        ("xnLinkFinder", ["-d", domain, "-o", "output/urls_xnlinkfinder.txt"]),
+        ("urlgrab", ["-d", domain, "-o", "output/urls_urlgrab.txt"]),
+        ("waymore", ["-d", domain, "-o", "output/urls_waymore.txt"])
     ]
-    with Progress() as progress:
-        task = progress.add_task("[cyan]Collecting URLs...", total=len(tools))
-        for tool, command in tools:
-            console.print(f"[info]Running {tool}...[/info]")
-            subprocess.run(command, shell=True)
-            with open(f"{tool}_output.txt", "r") as f:
-                urls.extend(f.read().splitlines())
-            progress.advance(task)
-    urls = list(set(urls))
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_DIR / "collected_urls.txt", "w") as f:
-        for url in urls:
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(run_tool, tool, args) for tool, args in tools]
+        concurrent.futures.wait(futures)
+    
+    # Combine results
+    urls = set()
+    for tool, args in tools:
+        with open(args[-1], 'r') as f:
+            urls.update(f.read().splitlines())
+    
+    with open('output/collected_urls.txt', 'w') as f:
+        for url in sorted(urls):
             f.write(url + '\n')
-    console.print("[success]URL collection completed! 🎉[/success]")
+
+if __name__ == "__main__":
+    run()

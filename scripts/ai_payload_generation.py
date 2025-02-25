@@ -1,21 +1,36 @@
 import openai
-from pathlib import Path
-from rich.console import Console
+import json
 
-OUTPUT_DIR = Path("output")
+def load_api_key():
+    with open('configs/config.json', 'r') as f:
+        config = json.load(f)
+    return config['openai_api_key']
 
-def generate_payloads(vulnerability_type):
-    console = Console()
-    config = load_config()  # Assuming load_config() is defined elsewhere
-    openai.api_key = config['openai_api_key']
+def generate_payloads(category, prompt):
+    openai.api_key = load_api_key()
+    response = openai.Completion.create(
+        engine="davinci-codex",
+        prompt=prompt,
+        max_tokens=50
+    )
+    return response.choices[0].text.strip()
+
+def run():
+    prompts = {
+        "XSS": "Generate an XSS payload:",
+        "SQLi": "Generate a SQL injection payload:",
+        "SSRF": "Generate a SSRF payload:",
+        "Command Injection": "Generate a command injection payload:",
+        "LFI": "Generate a Local File Inclusion payload:",
+        "RCE": "Generate a Remote Code Execution payload:",
+        "Open Redirect": "Generate an Open Redirect payload:",
+        "IDOR": "Generate an Insecure Direct Object References payload:"
+    }
     
-    console.print(f"[title]🧠 Generating payloads for {vulnerability_type}...[/title]")
-    prompt = f"Generate sophisticated payloads for {vulnerability_type} vulnerability, considering recent attack vectors."
-    response = openai.Completion.create(model="text-davinci-003", prompt=prompt, max_tokens=1024)
-    payloads = response.choices[0].text.splitlines()
+    payloads = {category: generate_payloads(category, prompt) for category, prompt in prompts.items()}
     
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_DIR / "payloads" / f"{vulnerability_type}_payloads.txt", "w") as f:
-        for payload in payloads:
-            f.write(payload + '\n')
-    console.print(f"[success]Payload generation for {vulnerability_type} completed! 🎉[/success]")
+    with open('output/payloads.json', 'w') as f:
+        json.dump(payloads, f, indent=4)
+
+if __name__ == "__main__":
+    run()
