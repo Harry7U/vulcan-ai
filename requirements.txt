@@ -1,0 +1,6 @@
+rich
+colorama
+openai
+argparse
+requests
+tqdm
