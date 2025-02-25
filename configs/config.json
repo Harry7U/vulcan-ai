@@ -4,7 +4,7 @@
     "example": "value"
   },
   "settings": {
-    "max_threads": 10,
+    "max_threads": 20,
     "timeout": 60,
     "color_theme": "vibrant",
     "enable_animations": true
