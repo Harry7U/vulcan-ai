@@ -4,3 +4,5 @@ openai
 argparse
 requests
 tqdm
+beautifulsoup4
+lxml
