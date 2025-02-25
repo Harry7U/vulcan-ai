@@ -1,0 +1,12 @@
+{
+  "openai_api_key": "YOUR_OPENAI_API_KEY",
+  "other_sensitive_data": {
+    "example": "value"
+  },
+  "settings": {
+    "max_threads": 10,
+    "timeout": 60,
+    "color_theme": "vibrant",
+    "enable_animations": true
+  }
+}
