@@ -1,31 +1,38 @@
 import subprocess
-from pathlib import Path
-from rich.console import Console
-from rich.progress import Progress
+import concurrent.futures
 
-OUTPUT_DIR = Path("output")
+def run_tool(tool, args):
+    subprocess.run([tool] + args, shell=True)
 
-def enumerate_subdomains(domain):
-    console = Console()
-    console.print("[title]🚀 Running subdomain enumeration...[/title]")
-    subdomains = []
+def run(domain):
     tools = [
-        ("subfinder", f"subfinder -d {domain} -o subfinder_output.txt"),
-        ("amass", f"amass enum -d {domain} -o amass_output.txt"),
-        ("assetfinder", f"assetfinder --subs-only {domain} > assetfinder_output.txt"),
-        ("sublist3r", f"python3 Sublist3r/sublist3r.py -d {domain} -o sublist3r_output.txt")
+        ("subfinder", ["-d", domain, "-o", "output/subdomains_subfinder.txt"]),
+        ("amass", ["enum", "-d", domain, "-o", "output/subdomains_amass.txt"]),
+        ("assetfinder", ["--subs-only", domain, ">", "output/subdomains_assetfinder.txt"]),
+        ("sublist3r", ["-d", domain, "-o", "output/subdomains_sublist3r.txt"]),
+        ("findomain", ["-t", domain, "-o", "output/subdomains_findomain.txt"]),
+        ("massdns", ["-r", "/path/to/resolvers.txt", domain, "-o", "output/subdomains_massdns.txt"]),
+        ("dnsx", ["-d", domain, "-o", "output/subdomains_dnsx.txt"]),
+        ("shuffledns", ["-d", domain, "-o", "output/subdomains_shuffledns.txt"]),
+        ("puredns", ["brute", domain, "-r", "/path/to/resolvers.txt", "-w", "/path/to/wordlist.txt", "-o", "output/subdomains_puredns.txt"]),
+        ("hakrevdns", ["-d", domain, "--output", "output/subdomains_hakrevdns.txt"]),
+        ("chaos", ["-d", domain, "-o", "output/subdomains_chaos.txt"]),
+        ("turbo", ["-d", domain, "-o", "output/subdomains_turbo.txt"])
     ]
-    with Progress() as progress:
-        task = progress.add_task("[cyan]Enumerating subdomains...", total=len(tools))
-        for tool, command in tools:
-            console.print(f"[info]Running {tool}...[/info]")
-            subprocess.run(command, shell=True)
-            with open(f"{tool}_output.txt", "r") as f:
-                subdomains.extend(f.read().splitlines())
-            progress.advance(task)
-    subdomains = list(set(subdomains))
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_DIR / "subdomains.txt", "w") as f:
-        for subdomain in subdomains:
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(run_tool, tool, args) for tool, args in tools]
+        concurrent.futures.wait(futures)
+    
+    # Combine results
+    subdomains = set()
+    for tool, args in tools:
+        with open(args[-1], 'r') as f:
+            subdomains.update(f.read().splitlines())
+    
+    with open('output/subdomains.txt', 'w') as f:
+        for subdomain in sorted(subdomains):
             f.write(subdomain + '\n')
-    console.print("[success]Subdomain enumeration completed! 🎉[/success]")
+
+if __name__ == "__main__":
+    run()
